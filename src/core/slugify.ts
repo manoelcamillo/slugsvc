@@ -4,17 +4,27 @@ export interface SlugifyOptions {
   separator?: string
   lowercase?: boolean
   maxLength?: number
+  /** Remove palavras vazias (artigos/preposições) do slug para deixá-lo mais curto e legível. */
+  removeStopWords?: boolean
 }
 
 const DEFAULTS: Required<SlugifyOptions> = {
   separator: '-',
   lowercase: true,
   maxLength: 120,
+  removeStopWords: false,
 }
+
+/** Palavras vazias PT/EN removidas quando `removeStopWords` está ativo. */
+const STOP_WORDS = new Set([
+  'a', 'o', 'as', 'os', 'de', 'da', 'do', 'das', 'dos', 'e', 'em', 'um', 'uma', 'para', 'com',
+  'the', 'a', 'an', 'of', 'and', 'in', 'to', 'for', 'with',
+])
 
 /**
  * Converte um título arbitrário num slug seguro para URL: translitera acentos,
- * remove pontuação, colapsa separadores e trunca no limite de comprimento.
+ * remove pontuação, opcionalmente descarta palavras vazias, colapsa separadores
+ * e trunca no limite de comprimento sem cortar no meio de uma palavra.
  */
 export function slugify(input: string, options: SlugifyOptions = {}): string {
   const opts = { ...DEFAULTS, ...options }
@@ -23,6 +33,7 @@ export function slugify(input: string, options: SlugifyOptions = {}): string {
   s = s.replace(/[^a-zA-Z0-9]+/g, opts.separator)
   s = collapseSeparators(s, opts.separator)
   s = trimSeparators(s, opts.separator)
+  if (opts.removeStopWords) s = dropStopWords(s, opts.separator)
   if (s.length > opts.maxLength) {
     // Trunca sem cortar no meio de uma palavra: recua até o último separador.
     s = s.slice(0, opts.maxLength)
@@ -30,6 +41,13 @@ export function slugify(input: string, options: SlugifyOptions = {}): string {
     if (lastSep > 0) s = s.slice(0, lastSep)
   }
   return trimSeparators(s, opts.separator)
+}
+
+/** Descarta palavras vazias, preservando ao menos uma palavra (nunca devolve slug vazio). */
+function dropStopWords(s: string, sep: string): string {
+  const words = s.split(sep).filter(Boolean)
+  const kept = words.filter((w) => !STOP_WORDS.has(w))
+  return (kept.length > 0 ? kept : words).join(sep)
 }
 
 function collapseSeparators(s: string, sep: string): string {
