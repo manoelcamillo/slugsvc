@@ -1,0 +1,10 @@
+{
+  "name": "slugsvc",
+  "version": "0.1.0",
+  "description": "Serviço de slugificação de títulos para URLs (repo de teste do update incremental).",
+  "type": "module",
+  "main": "src/api/server.ts",
+  "scripts": {
+    "start": "tsx src/api/server.ts"
+  }
+}
